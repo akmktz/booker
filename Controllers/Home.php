@@ -1,17 +1,25 @@
 <?php
 namespace Controllers;
 
+use Core\Controller;
+
 /**
  * Class Home
  * @package Controllers
  */
-class Home
+class Home extends Controller
 {
+    public function before()
+    {
+        $this->h1 = 'Home';
+        $this->title = 'Booker: Home';
+    }
+
     /**
      * Index action.
      */
     public function index()
     {
-        echo 'All ok';
+        return $this->view('Home/index', ['param' => 'TEST <PARAM>']);
     }
 }

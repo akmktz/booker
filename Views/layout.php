@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-    <title>404</title>
+    <?php if ($content['title']): ?>
+        <title><?= $content['title'] ?></title>
+    <?php endif; ?>
 </head>
 <body>
-<h1>404 - Not found</h1>
+<?php if ($content['h1']): ?>
+    <h1><?= $content['h1'] ?></h1>
+<?php endif; ?>
+<?php if ($content['view']): ?>
+    <h1><?= $content['view'] ?></h1>
+<?php endif; ?>
 </body>
 </html>
 

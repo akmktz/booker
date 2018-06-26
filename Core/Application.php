@@ -10,7 +10,9 @@ class Application
     private static $instance;
 
     private $router = null;
+    //TODO: Implement
     private $config;
+    //TODO: Implement
     private $database;
     private $rootPath;
 
@@ -25,8 +27,8 @@ class Application
             self::$instance = new self();
             $app = self::$instance;
             $app->initialize();
-            $app->run();
         }
+
         return self::$instance;
     }
 
@@ -40,8 +42,35 @@ class Application
         return $this->rootPath;
     }
 
-    private function __clone() {}
-    private function __construct() {}
+    public function run()
+    /**
+     * Run application.
+     */
+    {
+        $controllerName = $this->router->getController();
+        $actionName = $this->router->getAction();
+        if (!$controllerName || !$actionName) {
+            ob_clean();
+            http_response_code(404);
+            include $this->getRootPath() . 'Views/404.php';
+            die();
+        }
+
+        // Run controller and get rendered view
+        $content = [];
+        $controllerName = 'Controllers\\' . $controllerName;
+
+        $controller = new $controllerName;
+        $controller->before();
+        $content['view'] = $controller->{$actionName}();
+        $controller->after();
+
+        $content['title'] = $controller->getTitle();
+        $content['h1'] = $controller->getH1();
+
+        // Put view into layout
+        echo $controller->view($controller->getLayout(), compact('content'));
+    }
 
     /**
      * Initialize application.
@@ -53,22 +82,6 @@ class Application
         $this->router = new Router($this);
     }
 
-    /**
-     * Run application.
-     */
-    private function run()
-    {
-        $controllerName = $this->router->getController();
-        $actionName = $this->router->getAction();
-        if (!$controllerName || !$actionName) {
-            http_response_code(404);
-            ob_clean();
-            include $this->getRootPath() . 'Views/404.php';
-            die();
-        }
-
-        $controllerName = 'Controllers\\' . $controllerName;
-        $controller = new $controllerName;
-        $controller->{$actionName}();
-    }
+    private function __clone() {}
+    private function __construct() {}
 }

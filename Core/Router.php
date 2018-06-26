@@ -14,7 +14,7 @@ class Router
      * Router constructor.
      * @param Application $app
      */
-    public function __construct($app)
+    public function __construct(Application $app)
     {
         $url = $_SERVER['REQUEST_URI'];
         $routes = require_once $app->getRootPath() . 'Route/route.php';

@@ -8,4 +8,4 @@ require_once __DIR__.'/../Core/Autoloader.php';
 
 $application = Application::getInstance();
 
-//$application = require_once __DIR__.'/../core/application.php';
+$application->run();
