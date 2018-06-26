@@ -1,11 +1,12 @@
 <?php
+namespace Controllers;
 
 /**
- * Class Index
+ * Class Home
+ * @package Controllers
  */
-class Main
+class Home
 {
-
     /**
      * Index action.
      */

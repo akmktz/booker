@@ -1,5 +1,10 @@
 <?php
+namespace Core;
 
+/**
+ * Class Router
+ * @package Core
+ */
 class Router
 {
     private $controller = null;
@@ -12,7 +17,7 @@ class Router
     public function __construct($app)
     {
         $url = $_SERVER['REQUEST_URI'];
-        $routes = require_once $app->getRootPath() . '/route/route.php';
+        $routes = require_once $app->getRootPath() . 'Route/route.php';
         foreach ($routes as $route => $path) {
             //TODO: Realize params
             //if (preg_match_all('|^' . preg_quote($route) . '$|', $url, $params) !== false) {

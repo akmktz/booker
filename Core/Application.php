@@ -1,7 +1,9 @@
 <?php
+namespace Core;
 
 /**
  * Class Application
+ * @package Core
  */
 class Application
 {
@@ -47,8 +49,7 @@ class Application
     private function initialize()
     {
         // Routing
-        $this->rootPath = rtrim(preg_replace('/core\/?$/', '', __DIR__), '/') . '/';
-        require_once 'router.php';
+        $this->rootPath = rtrim(preg_replace('/Core\/?$/', '', __DIR__), '/') . '/';
         $this->router = new Router($this);
     }
 
@@ -62,13 +63,12 @@ class Application
         if (!$controllerName || !$actionName) {
             http_response_code(404);
             ob_clean();
-            include $this->getRootPath() . 'views/404.php';
+            include $this->getRootPath() . 'Views/404.php';
+            die();
         }
 
-        require_once $this->getRootPath() . 'controllers/' . $controllerName . '.php';
+        $controllerName = 'Controllers\\' . $controllerName;
         $controller = new $controllerName;
         $controller->{$actionName}();
     }
 }
-
-return Application::getInstance();

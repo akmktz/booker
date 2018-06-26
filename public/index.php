@@ -1,4 +1,11 @@
 <?php
 
+use Core\Application;
+
 define('LARAVEL_START', microtime(true));
-$application = require_once __DIR__.'/../core/application.php';
+
+require_once __DIR__.'/../Core/Autoloader.php';
+
+$application = Application::getInstance();
+
+//$application = require_once __DIR__.'/../core/application.php';
