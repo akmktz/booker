@@ -33,7 +33,7 @@ class Router
     /**
      * @return string|null
      */
-    public function getController()
+    public function getController(): string
     {
         return $this->controller;
     }
@@ -41,7 +41,7 @@ class Router
     /**
      * @return string|null
      */
-    public function getAction()
+    public function getAction(): string
     {
         return $this->action;
     }

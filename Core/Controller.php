@@ -27,7 +27,7 @@ class Controller
     /**
      * @return string
      */
-    public function getH1()
+    public function getH1(): string
     {
         return $this->h1;
     }
@@ -35,7 +35,7 @@ class Controller
     /**
      * @return string
      */
-    public function getTitle()
+    public function getTitle(): string
     {
         return $this->title;
     }
@@ -43,7 +43,7 @@ class Controller
     /**
      * @return string
      */
-    public function getLayout()
+    public function getLayout(): string
     {
         return $this->layout;
     }
@@ -72,7 +72,7 @@ class Controller
      * @param array $
      * @return string
      */
-    public function view(string $pathName, array $params = [], array $unscreeningParams = [])
+    public function view(string $pathName, array $params = [], array $unscreeningParams = []): string
     {
         // Screening of data
         foreach ($params as &$param) {

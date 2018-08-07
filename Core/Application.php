@@ -1,6 +1,8 @@
 <?php
 namespace Core;
 
+use PDO;
+
 /**
  * Class Application
  * @package Core
@@ -10,17 +12,15 @@ class Application
     private static $instance;
 
     private $router = null;
-    //TODO: Implement
-    private $config;
-    //TODO: Implement
-    private $database;
-    private $rootPath;
+    private $config = [];
+    private $databaseConnection = null;
+    private $rootPath = '';
 
 
     /**
      * @return Application
      */
-    public static function getInstance()
+    public static function getInstance(): Application
     {
         if (null === self::$instance)
         {
@@ -33,16 +33,50 @@ class Application
     }
 
     /**
+     * Get config
+     *
+     * @param string|null $section
+     * @return array
+     */
+    public function getConfig(string $section = ''): array
+    {
+        if ($section) {
+            return $this->config[$section] ?? [];
+        }
+
+        return $this->config;
+    }
+
+    /**
+     * Get pdo connection to database
+     *
+     * @return PDO
+     */
+    public function getDatabaseConnection(): PDO
+    {
+        if (!$this->databaseConnection) {
+            $dbConfig = $this->getConfig('database');
+            $dsn = $dbConfig['dsn'] ?? '';
+            $username = $dbConfig['username'] ?? '';
+            $password = $dbConfig['password'] ?? '';
+
+            $this->databaseConnection = new PDO($dsn, $username, $password);
+        }
+
+        return $this->databaseConnection;
+    }
+
+    /**
      * Get root path
      *
      * @return string
      */
-    public function getRootPath()
+    public function getRootPath(): string
     {
         return $this->rootPath;
     }
 
-    public function run()
+        public function run()
     /**
      * Run application.
      */
@@ -77,6 +111,12 @@ class Application
      */
     private function initialize()
     {
+        // Config
+        $databaseConfig = include '../Config/database.php';
+        $this->config = [
+          'database' => is_array($databaseConfig) ? $databaseConfig : [],
+        ];
+
         // Routing
         $this->rootPath = rtrim(preg_replace('/Core\/?$/', '', __DIR__), '/') . '/';
         $this->router = new Router($this);
