@@ -27,10 +27,12 @@ class Home extends Controller
         //    ->execute();
 
         $query = QueryBuilder::factory(['table', 't'])
-            ->select('t.id', ['t.name', 'user_name'])
-            ->where('t.id', '=', 1)
-            ->orWhere('t.id', '=', 2)
-            ->orWhere('t.id', '=', 3)
+            ->select(['COUNT', 't.id', 'count'],  ['t.name', 'user_name']  , ['AVG', 't.age', 'age_avg'])
+            //->where('t.id', '>', 0)
+            //->where('t.id', '<', 100)
+            ->groupBy('t.name')
+            ->orderBy('age_avg')
+            //->orderBy('t.id', 'DESC')
             ->execute();
 
         var_dump($query->getAll());

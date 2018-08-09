@@ -2,7 +2,10 @@
 
 namespace Core\Database;
 
-//TODO: MAGIC factory
+// TODO: Where groups
+// TODO: Joins
+// TODO: Inner queries
+
 use Core\Application;
 use PDO;
 
@@ -15,6 +18,8 @@ class QueryBuilder
     private $select = [];
     private $from = null;
     private $where = [];
+    private $groupBy= [];
+    private $orderBy = [];
     private $connection = null;
     private $result = null;
     private $sqlQuery = '';
@@ -25,6 +30,8 @@ class QueryBuilder
     const QB_SELECT = 'SELECT';
     const QB_FROM = 'FROM';
     const QB_WHERE = 'WHERE';
+    const QB_GROUPBY = 'GROUP BY';
+    const QB_ORDERBY = 'ORDER BY';
     const QB_AND = 'AND';
     const QB_OR = 'OR';
 
@@ -34,7 +41,6 @@ class QueryBuilder
      * @param string|array $from
      * @return QueryBuilder
      */
-
     public static function factory($from): QueryBuilder
     {
         $qb = new QueryBuilder();
@@ -45,6 +51,7 @@ class QueryBuilder
 
     /**
      * SELECT
+     *
      * @param ....
      * @return QueryBuilder
      */
@@ -93,27 +100,67 @@ class QueryBuilder
     }
 
     /**
+     * GROUP BY
+     *
+     * @param string $field
+     * @return QueryBuilder
+     */
+    public function groupBy(string $field): QueryBuilder
+    {
+        $this->clearQueryData();
+
+        $this->groupBy[] = $field;
+
+        return $this;
+    }
+
+    /**
+     * ORDER BY
+     *
+     * @param string $field
+     * @return QueryBuilder
+     */
+    public function orderBy(string $field, string $order = ''): QueryBuilder
+    {
+        $this->clearQueryData();
+
+        $this->orderBy[] = trim($field . ' ' . $order);
+
+        return $this;
+    }
+
+    /**
      * EXECUTE QUERY
      *
      * @return QueryBuilder
      */
     public function execute(): QueryBuilder
     {
-        $this->buildSQLQuery();
+        // Clear query data
+        $this->clearQueryData();
+
+        // Build query
+        $this->buildSelectSection();
+        $this->buildFromSection();
+        $this->buildWhereSection();
+        $this->buildGroupBySection();
+        $this->buildOrderBySection();
+
         //TODO: REMOVE
+        //var_dump($this);
         echo '<pre>' . $this->sqlQuery . '</pre>';
         var_dump($this->sqlParameters);
+        //TODO: REMOVE
 
+        // Get database connection
         if (!$this->connection) {
             $application = Application::getInstance();
             $this->connection = $application->getDatabaseConnection();
         }
 
+        // Execute query
         $this->result = $this->connection->prepare($this->sqlQuery);
         $this->result->execute($this->sqlParameters);
-
-        //TODO: REMOVE
-        //var_dump($this);
 
         return $this;
     }
@@ -139,18 +186,6 @@ class QueryBuilder
     }
 
     /**
-     * BUILD SQL QUERY
-     */
-    private function buildSQLQuery()
-    {
-        $this->clearQueryData();
-
-        $this->buildSelectSection();
-        $this->buildFromSection();
-        $this->buildWhereSection();
-    }
-
-    /**
      * BUILD SELECT SECTION
      */
     private function buildSelectSection()
@@ -159,9 +194,15 @@ class QueryBuilder
 
         foreach($this->select as $key => $param) {
             if (is_array($param)) {
-                $field = $this->shield(array_shift($param), true);
-                $name = $this->shield(array_shift($param));
-                $select[] = $field . ' AS ' . $name;
+                $name = array_pop($param);
+                $field = $this->shield(array_pop($param), true);
+                $functionName = array_pop($param);
+
+                if ($functionName) {
+                    $select[] = $functionName . '(' . $field . ') AS ' . $name;
+                } else {
+                    $select[] = $field . ' AS ' . $name;
+                }
             } elseif (is_string($param)) {
                 $select[] = $this->shield($param, true);
             }
@@ -189,7 +230,7 @@ class QueryBuilder
         } elseif (is_string($this->from)) {
 
             $this->sqlQuery .= "\n" . static::QB_FROM . ' '
-                . static::QB_COLUMN_SYMBOL . $this->shield($this->from) . static::QB_COLUMN_SYMBOL;
+                . static::QB_COLUMN_SYMBOL . $this->shield($this->from, true) . static::QB_COLUMN_SYMBOL;
         }
     }
 
@@ -221,6 +262,26 @@ class QueryBuilder
         }
 
         $this->sqlQuery .= "\n" . static::QB_WHERE . ' ' . $where;
+    }
+
+    /**
+     * BUILD GROUP BY SECTION
+     */
+    private function buildGroupBySection()
+    {
+        if (count($this->groupBy)) {
+            $this->sqlQuery .= "\n" . static::QB_GROUPBY . ' ' . implode(', ', $this->groupBy);
+        }
+    }
+
+    /**
+     * BUILD ORDER BY SECTION
+     */
+    private function buildOrderBySection()
+    {
+        if (count($this->orderBy)) {
+            $this->sqlQuery .= "\n" . static::QB_ORDERBY . ' ' . implode(', ', $this->orderBy);
+        }
     }
 
     /**

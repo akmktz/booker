@@ -61,6 +61,7 @@ class Application
             $password = $dbConfig['password'] ?? '';
 
             $this->databaseConnection = new PDO($dsn, $username, $password);
+            $this->databaseConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
 
         return $this->databaseConnection;
@@ -76,10 +77,10 @@ class Application
         return $this->rootPath;
     }
 
-        public function run()
     /**
      * Run application.
      */
+    public function run()
     {
         $controllerName = $this->router->getController();
         $actionName = $this->router->getAction();
