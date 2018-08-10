@@ -26,13 +26,24 @@ class Home extends Controller
         //    ->where('t.name', '=', '"test\'(!@#$%^&*())')
         //    ->execute();
 
+        //$query = QueryBuilder::factory(['table', 't'])
+        //    ->select(['COUNT', 't.id', 'count'],  ['t.name', 'user_name']  , ['AVG', 't.age', 'age_avg'])
+        //    ->where('t.id', '>', 0)
+        //    ->where('t.id', '<', 100)
+        //    ->groupBy('t.name')
+        //    ->orderBy('age_avg')
+        //    ->execute();
+
         $query = QueryBuilder::factory(['table', 't'])
-            ->select(['COUNT', 't.id', 'count'],  ['t.name', 'user_name']  , ['AVG', 't.age', 'age_avg'])
-            //->where('t.id', '>', 0)
-            //->where('t.id', '<', 100)
-            ->groupBy('t.name')
-            ->orderBy('age_avg')
-            //->orderBy('t.id', 'DESC')
+            ->whereGroupBegin()
+            ->where('t.id', '>=', 2)
+            ->where('t.id', '<=', 2)
+            ->whereGroupEnd()
+            ->orWhereGroupBegin()
+            ->where('t.id', '>=', 4)
+            ->where('t.id', '<=', 4)
+            ->whereGroupEnd()
+            ->orderBy('t.id')
             ->execute();
 
         var_dump($query->getAll());

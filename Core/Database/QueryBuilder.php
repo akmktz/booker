@@ -4,7 +4,6 @@ namespace Core\Database;
 
 // TODO: Where groups
 // TODO: Joins
-// TODO: Inner queries
 
 use Core\Application;
 use PDO;
@@ -34,6 +33,9 @@ class QueryBuilder
     const QB_ORDERBY = 'ORDER BY';
     const QB_AND = 'AND';
     const QB_OR = 'OR';
+    const QB_BEGIN_WHERE_GROUP = '(';
+    const QB_END_WHERE_GROUP = ')';
+
 
     /**
      * FACTORY
@@ -75,8 +77,9 @@ class QueryBuilder
     {
         $this->clearQueryData();
 
+        $type = '';
         $operator = static::QB_AND;
-        $this->where[] = compact('operator', 'field', 'comparison', 'value');
+        $this->where[] = compact('type', 'operator', 'field', 'comparison', 'value');
 
         return $this;
     }
@@ -93,8 +96,59 @@ class QueryBuilder
     {
         $this->clearQueryData();
 
+        $type = '';
         $operator = static::QB_OR;
-        $this->where[] = compact('operator', 'field', 'comparison', 'value');
+        $this->where[] = compact('type', 'operator', 'field', 'comparison', 'value');
+
+        return $this;
+    }
+
+    /**
+     * AND WHERE GROUP BEGIN
+     *
+     * @return QueryBuilder
+     */
+    public function whereGroupBegin(): QueryBuilder
+    {
+        $this->clearQueryData();
+
+        $this->where[] = [
+            'type' => static::QB_BEGIN_WHERE_GROUP,
+            'operator' => static::QB_AND,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * OR WHERE GROUP BEGIN
+     *
+     * @return QueryBuilder
+     */
+    public function orWhereGroupBegin(): QueryBuilder
+    {
+        $this->clearQueryData();
+
+        $this->where[] = [
+            'type' => static::QB_BEGIN_WHERE_GROUP,
+            'operator' => static::QB_OR,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * WHERE GROUP END
+     *
+     * @return QueryBuilder
+     */
+    public function whereGroupEnd(): QueryBuilder
+    {
+        $this->clearQueryData();
+
+        $this->where[] = [
+            'type' => static::QB_END_WHERE_GROUP,
+        ];
 
         return $this;
     }
@@ -240,21 +294,35 @@ class QueryBuilder
     private function buildWhereSection()
     {
         $where = '';
+        $firstOperand = true;
         $paramNo = count($this->sqlParameters);
 
-        foreach($this->where as $key => $param) {
+        foreach($this->where as $param) {
+            if ($param['type'] === static::QB_END_WHERE_GROUP) {
+                $where .= static::QB_END_WHERE_GROUP;
+                $firstOperand = false;
+                continue;
+            }
+
             $operator = $param['operator'];
+            if (!$firstOperand) {
+                $where .= ' ' . $operator . ' ';
+            }
+            $firstOperand = false;
+
+            if ($param['type'] === static::QB_BEGIN_WHERE_GROUP) {
+                $where .= static::QB_BEGIN_WHERE_GROUP;
+                $firstOperand = true;
+                continue;
+            }
+
             $field = $this->shield($param['field'], true);
             $comparsion = $param['comparison'];
             $value = $param['value'];
 
-            if ($key > 0) {
-                $where .= ' ' . $operator . ' ';
-            }
-
             $sqlParamName = ':param' . (++$paramNo);
             $where .= $field . ' ' . $comparsion  . ' ' . $sqlParamName;
-                $this->sqlParameters[$sqlParamName] = $value;
+            $this->sqlParameters[$sqlParamName] = $value;
         }
 
         if (!$where) {
