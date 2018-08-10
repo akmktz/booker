@@ -2,8 +2,9 @@
 
 namespace Core\Database;
 
-// TODO: Where groups
 // TODO: Joins
+// TODO: Count
+// TODO: Get first
 
 use Core\Application;
 use PDO;
@@ -11,6 +12,28 @@ use PDO;
 /**
  * Class QueryBuilder
  * @package Core\Database
+ *
+ * QueryBuilder::factory('table')->groupBy('id')->orderBy('name', 'DESC')->getAll()
+ * SELECT * FROM `table` GROUP BY id ORDER BY name DESC
+ *
+ * QueryBuilder::factory(['table', 't'])->select('id', ['t.name', 'user_name'], ['AVG', 't.age', 'age_avg'])->getAll()
+ * SELECT `id`, `t`.`name` AS user_name, AVG(`t`.`age`) AS age_avg FROM `table` AS t
+ *
+ * QueryBuilder::factory('table')->where('t.id', '>', 0)->where('t.id', '=', 1)->orWhere('t.id', '=', 2)->getAll()
+ * SELECT * FROM `table` WHERE `t`.`id` > 0 AND `t`.`id` = 1 OR `t`.`id` = 2
+ *
+ * QueryBuilder::factory('table')
+ * ->where('t.id', '>', 0)->whereGroupBegin()->where('t.id', '>=', 1)->where('t.id', '<=', 2)->whereGroupEnd()->getAll()
+ * SELECT * FROM `table` WHERE `t`.`id` > 0 AND (`t`.`id` >= 1 AND `t`.`id` <= 2)
+ *
+ * QueryBuilder::factory('table')->where('t.id', '>', 0)
+ * ->orWhereGroupBegin()->where('t.id', '=', 1)->orWhere('t.id', '=', 2)->whereGroupEnd()->getAll();
+ * SELECT * FROM `table` WHERE `t`.`id` > 0 OR (`t`.`id` = 1 OR `t`.`id` = 2)
+ *
+ *
+ *
+ *
+ *
  */
 class QueryBuilder
 {
@@ -20,7 +43,6 @@ class QueryBuilder
     private $groupBy= [];
     private $orderBy = [];
     private $connection = null;
-    private $result = null;
     private $sqlQuery = '';
     private $sqlParameters = [];
 
@@ -59,8 +81,6 @@ class QueryBuilder
      */
     public function select(): QueryBuilder
     {
-        $this->clearQueryData();
-
         $this->select = func_get_args();
         return $this;
     }
@@ -75,8 +95,6 @@ class QueryBuilder
      */
     public function where(string $field, string $comparison, $value): QueryBuilder
     {
-        $this->clearQueryData();
-
         $type = '';
         $operator = static::QB_AND;
         $this->where[] = compact('type', 'operator', 'field', 'comparison', 'value');
@@ -94,8 +112,6 @@ class QueryBuilder
      */
     public function orWhere(string $field, string $comparison, $value): QueryBuilder
     {
-        $this->clearQueryData();
-
         $type = '';
         $operator = static::QB_OR;
         $this->where[] = compact('type', 'operator', 'field', 'comparison', 'value');
@@ -110,8 +126,6 @@ class QueryBuilder
      */
     public function whereGroupBegin(): QueryBuilder
     {
-        $this->clearQueryData();
-
         $this->where[] = [
             'type' => static::QB_BEGIN_WHERE_GROUP,
             'operator' => static::QB_AND,
@@ -127,8 +141,6 @@ class QueryBuilder
      */
     public function orWhereGroupBegin(): QueryBuilder
     {
-        $this->clearQueryData();
-
         $this->where[] = [
             'type' => static::QB_BEGIN_WHERE_GROUP,
             'operator' => static::QB_OR,
@@ -144,8 +156,6 @@ class QueryBuilder
      */
     public function whereGroupEnd(): QueryBuilder
     {
-        $this->clearQueryData();
-
         $this->where[] = [
             'type' => static::QB_END_WHERE_GROUP,
         ];
@@ -161,8 +171,6 @@ class QueryBuilder
      */
     public function groupBy(string $field): QueryBuilder
     {
-        $this->clearQueryData();
-
         $this->groupBy[] = $field;
 
         return $this;
@@ -176,11 +184,33 @@ class QueryBuilder
      */
     public function orderBy(string $field, string $order = ''): QueryBuilder
     {
-        $this->clearQueryData();
-
         $this->orderBy[] = trim($field . ' ' . $order);
 
         return $this;
+    }
+
+    /**
+     * Return query result as array of objects
+     *
+     * @param string $groupField
+     * @return array
+     */
+    public function getAll(string $groupField = null, string $column = null): array
+    {
+        // Execute query
+        $result = $this->execute();
+
+        // Processing result
+        if (!$result) {
+            return [];
+        }
+
+        $result = $result->fetchAll(PDO::FETCH_OBJ);
+        if ($groupField || $column) {
+            $result = array_column($result, $column, $groupField);
+        }
+
+        return $result;
     }
 
     /**
@@ -188,10 +218,11 @@ class QueryBuilder
      *
      * @return QueryBuilder
      */
-    public function execute(): QueryBuilder
+    private function execute(): \PDOStatement
     {
         // Clear query data
-        $this->clearQueryData();
+        $this->sqlQuery = '';
+        $this->sqlParameters = [];
 
         // Build query
         $this->buildSelectSection();
@@ -213,28 +244,8 @@ class QueryBuilder
         }
 
         // Execute query
-        $this->result = $this->connection->prepare($this->sqlQuery);
-        $this->result->execute($this->sqlParameters);
-
-        return $this;
-    }
-
-    /**
-     * Return query result as array of objects
-     *
-     * @param string $groupField
-     * @return array
-     */
-    public function getAll(string $groupField = null, string $column = null): array
-    {
-        if (!$this->result) {
-            return [];
-        }
-
-        $result = $this->result->fetchAll(PDO::FETCH_OBJ);
-        if ($groupField || $column) {
-            $result = array_column($result, $column, $groupField);
-        }
+        $result = $this->connection->prepare($this->sqlQuery);
+        $result->execute($this->sqlParameters);
 
         return $result;
     }
@@ -249,7 +260,7 @@ class QueryBuilder
         foreach($this->select as $key => $param) {
             if (is_array($param)) {
                 $name = array_pop($param);
-                $field = $this->shield(array_pop($param), true);
+                $field = $this->shield(array_pop($param));
                 $functionName = array_pop($param);
 
                 if ($functionName) {
@@ -258,7 +269,7 @@ class QueryBuilder
                     $select[] = $field . ' AS ' . $name;
                 }
             } elseif (is_string($param)) {
-                $select[] = $this->shield($param, true);
+                $select[] = $this->shield($param);
             }
         }
 
@@ -276,15 +287,14 @@ class QueryBuilder
     private function buildFromSection()
     {
         if (is_array($this->from)) {
-            $field = $this->shield(array_shift($this->from), true);
+            $field = $this->shield(array_shift($this->from));
             $name = array_shift($this->from);
 
             $this->sqlQuery .= "\n" . static::QB_FROM . ' ' . $field . ' AS ' . $name;
 
         } elseif (is_string($this->from)) {
 
-            $this->sqlQuery .= "\n" . static::QB_FROM . ' '
-                . static::QB_COLUMN_SYMBOL . $this->shield($this->from, true) . static::QB_COLUMN_SYMBOL;
+            $this->sqlQuery .= "\n" . static::QB_FROM . ' ' . $this->shield($this->from);
         }
     }
 
@@ -316,7 +326,7 @@ class QueryBuilder
                 continue;
             }
 
-            $field = $this->shield($param['field'], true);
+            $field = $this->shield($param['field']);
             $comparsion = $param['comparison'];
             $value = $param['value'];
 
@@ -359,24 +369,10 @@ class QueryBuilder
      * @param bool $isField
      * @return string
      */
-    private function shield(string $param, bool $isField = false): string
+    private function shield(string $param): string
     {
-        if (!$isField) {
-            return  static::QB_VALUE_SYMBOL . addslashes($param) . static::QB_VALUE_SYMBOL;
-        }
-
         $param = addslashes($param);
         $param = str_replace('.', static::QB_COLUMN_SYMBOL . '.' . static::QB_COLUMN_SYMBOL, $param);
         return static::QB_COLUMN_SYMBOL . $param . static::QB_COLUMN_SYMBOL;
     }
-
-    /**
-     * Clear query data
-     */
-    private function clearQueryData()
-    {
-        $this->result = null;
-        $this->sqlParameters = [];
-    }
-
 }

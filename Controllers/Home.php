@@ -2,7 +2,6 @@
 namespace Controllers;
 
 use Core\Controller;
-use Core\Database\QueryBuilder;
 
 /**
  * Class Home
@@ -21,30 +20,23 @@ class Home extends Controller
      */
     public function index()
     {
-        //$query = QueryBuilder::factory(['table\'', 't\''])
-        //    ->select([1, 'one'], [2, 'two'], 'a', 'bb', 'ccc', ['test\'', 'test\''])
-        //    ->where('t.name', '=', '"test\'(!@#$%^&*())')
-        //    ->execute();
-
         //$query = QueryBuilder::factory(['table', 't'])
         //    ->select(['COUNT', 't.id', 'count'],  ['t.name', 'user_name']  , ['AVG', 't.age', 'age_avg'])
         //    ->where('t.id', '>', 0)
         //    ->where('t.id', '<', 100)
         //    ->groupBy('t.name')
-        //    ->orderBy('age_avg')
-        //    ->execute();
+        //    ->orderBy('age_avg');
 
-        $query = QueryBuilder::factory(['table', 't'])
-            ->whereGroupBegin()
-            ->where('t.id', '>=', 2)
-            ->where('t.id', '<=', 2)
-            ->whereGroupEnd()
-            ->orWhereGroupBegin()
-            ->where('t.id', '>=', 4)
-            ->where('t.id', '<=', 4)
-            ->whereGroupEnd()
-            ->orderBy('t.id')
-            ->execute();
+        //$query = QueryBuilder::factory(['table', 't'])
+        //    ->whereGroupBegin()
+        //    ->where('t.id', '>=', 2)
+        //    ->where('t.id', '<=', 2)
+        //    ->whereGroupEnd()
+        //    ->orWhereGroupBegin()
+        //    ->where('t.id', '>=', 4)
+        //    ->where('t.id', '<=', 4)
+        //    ->whereGroupEnd()
+        //    ->orderBy('t.id');
 
         var_dump($query->getAll());
         //var_dump($query->getAll('id', 'user_name'));
