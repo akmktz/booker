@@ -100,6 +100,12 @@ class Application
         $content['view'] = $controller->{$actionName}();
         $controller->after();
 
+        if (is_array($content['view'])) {
+            ob_clean();
+            echo json_encode($content['view']);
+            return;
+        }
+
         $content['title'] = $controller->getTitle();
         $content['h1'] = $controller->getH1();
 
