@@ -231,12 +231,6 @@ class QueryBuilder
         $this->buildGroupBySection();
         $this->buildOrderBySection();
 
-        //TODO: REMOVE
-        //var_dump($this);
-        echo '<pre>' . $this->sqlQuery . '</pre>';
-        var_dump($this->sqlParameters);
-        //TODO: REMOVE
-
         // Get database connection
         if (!$this->connection) {
             $application = Application::getInstance();
