@@ -23,7 +23,7 @@ class Users extends Controller
     {
         $query = QueryBuilder::factory(['table', 't'])
             ->select(
-                ['t.age', 'age'],
+                'age',
                 ['COUNT', 't.id', 'users_count'],
                 ['GROUP_CONCAT', 't.id', 'user_ids'],
                 ['GROUP_CONCAT', 't.name', 'user_names']
